@@ -63,7 +63,7 @@ module "private_nsg" {
 }
 
 module "databricks" {
-  source = "../../"
+  source = "cyber-scot/databricks-workspace/azurerm"
 
   rg_name  = module.rg.rg_name
   location = module.rg.rg_location
@@ -100,15 +100,15 @@ No requirements.
 
 | Name | Version |
 |------|---------|
-| <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) | 3.87.0 |
-| <a name="provider_external"></a> [external](#provider\_external) | 2.3.2 |
-| <a name="provider_http"></a> [http](#provider\_http) | 3.4.1 |
+| <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) | n/a |
+| <a name="provider_external"></a> [external](#provider\_external) | n/a |
+| <a name="provider_http"></a> [http](#provider\_http) | n/a |
 
 ## Modules
 
 | Name | Source | Version |
 |------|--------|---------|
-| <a name="module_databricks"></a> [databricks](#module\_databricks) | ../../ | n/a |
+| <a name="module_databricks"></a> [databricks](#module\_databricks) | cyber-scot/databricks-workspace/azurerm | n/a |
 | <a name="module_network"></a> [network](#module\_network) | cyber-scot/network/azurerm | n/a |
 | <a name="module_private_nsg"></a> [private\_nsg](#module\_private\_nsg) | cyber-scot/nsg/azurerm | n/a |
 | <a name="module_public_nsg"></a> [public\_nsg](#module\_public\_nsg) | cyber-scot/nsg/azurerm | n/a |

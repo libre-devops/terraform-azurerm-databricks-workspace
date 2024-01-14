@@ -62,7 +62,7 @@ module "private_nsg" {
 }
 
 module "databricks" {
-  source = "../../"
+  source = "cyber-scot/databricks-workspace/azurerm"
 
   rg_name  = module.rg.rg_name
   location = module.rg.rg_location
