@@ -10,10 +10,11 @@ variable "databricks_workspaces" {
     customer_managed_key_enabled                        = optional(bool)
     infrastructure_encryption_enabled                   = optional(bool)
     public_network_access_enabled                       = optional(bool, false)
-    custom_parameters = optional(list(object({
+    network_security_group_rules_required               = optional(string)
+    custom_parameters = optional(object({
       machine_learning_workspace_id                        = optional(string)
-      nat_gateway_name                                     = optional(string, "nat-gateway")
-      public_ip_name                                       = optional(string, "nat-gw-public-ip")
+      nat_gateway_name                                     = optional(string)
+      public_ip_name                                       = optional(string)
       no_public_ip                                         = optional(bool)
       public_subnet_name                                   = optional(string)
       public_subnet_network_security_group_association_id  = optional(string)
@@ -22,9 +23,8 @@ variable "databricks_workspaces" {
       storage_account_name                                 = optional(string)
       storage_account_sku_name                             = optional(string)
       virtual_network_id                                   = optional(string)
-      vnet_address_prefix                                  = optional(string, "10.139")
-
-    })))
+      vnet_address_prefix                                  = optional(string)
+    }))
   }))
 }
 

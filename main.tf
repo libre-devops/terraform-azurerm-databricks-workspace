@@ -13,11 +13,12 @@ resource "azurerm_databricks_workspace" "this" {
   managed_disk_cmk_key_vault_key_id                   = each.value.managed_disk_cmk_key_vault_key_id
   managed_disk_cmk_rotation_to_latest_version_enabled = each.value.managed_disk_cmk_rotation_to_latest_version_enabled
   customer_managed_key_enabled                        = each.value.customer_managed_key_enabled
-  infrastructure_encryption_enabled                   = each.value.infrastructure_encryption_enabled
+  infrastructure_encryption_enabled                   = lower(each.value.sku) == "premium" ? each.value.infrastructure_encryption_enabled : false
   public_network_access_enabled                       = each.value.public_network_access_enabled
+  network_security_group_rules_required               = each.value.network_security_group_rules_required
 
   dynamic "custom_parameters" {
-    for_each = each.value.custom_parameters != null ? each.value.custom_parameters : []
+    for_each = each.value.custom_parameters != null ? each.value.custom_parameters : {}
     content {
       machine_learning_workspace_id                        = custom_parameters.value.machine_learning_workspace_id
       nat_gateway_name                                     = custom_parameters.value.nat_gateway_name
