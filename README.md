@@ -19,7 +19,7 @@ resource "azurerm_databricks_workspace" "this" {
   network_security_group_rules_required               = each.value.network_security_group_rules_required
 
   dynamic "custom_parameters" {
-    for_each = each.value.custom_parameters != null ? each.value.custom_parameters : {}
+    for_each = each.value.custom_parameters != null ? [each.value.custom_parameters] : []
     content {
       machine_learning_workspace_id                        = custom_parameters.value.machine_learning_workspace_id
       nat_gateway_name                                     = custom_parameters.value.nat_gateway_name

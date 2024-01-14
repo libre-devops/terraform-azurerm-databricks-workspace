@@ -37,6 +37,30 @@ module "network" {
   }
 }
 
+module "public_nsg" {
+  source = "cyber-scot/nsg/azurerm"
+
+  rg_name  = module.rg.rg_name
+  location = module.rg.rg_location
+  tags     = module.rg.rg_tags
+
+  nsg_name              = "nsg-public-${var.short}-${var.loc}-${var.env}-01"
+  associate_with_subnet = true
+  subnet_id             = module.network.subnets_ids["sn1-public-${module.network.vnet_name}"]
+}
+
+module "private_nsg" {
+  source = "cyber-scot/nsg/azurerm"
+
+  rg_name  = module.rg.rg_name
+  location = module.rg.rg_location
+  tags     = module.rg.rg_tags
+
+  nsg_name              = "nsg-public-${var.short}-${var.loc}-${var.env}-01"
+  associate_with_subnet = true
+  subnet_id             = module.network.subnets_ids["sn2-private-${module.network.vnet_name}"]
+}
+
 module "databricks" {
   source = "../../"
 
@@ -54,13 +78,13 @@ module "databricks" {
       network_security_group_rules_required = "AllRules"
 
       custom_parameters = {
-        no_public_ip             = true
-        virtual_network_id       = module.network.vnet_id
-        storage_account_name     = "sadb${var.short}${var.loc}${var.env}01"
-        storage_account_sku_name = "Standard_LRS"
-        private_subnet_name      = "sn2-private-${module.network.vnet_name}"
-        public_subnet_name       = "sn1-public-${module.network.vnet_name}"
-
+        no_public_ip                                         = true
+        virtual_network_id                                   = module.network.vnet_id
+        storage_account_name                                 = "sadb${var.short}${var.loc}${var.env}01"
+        storage_account_sku_name                             = "Standard_LRS"
+        public_subnet_network_security_group_association_id  = module.public_nsg.nsg_subnet_association_ids[0]
+        private_subnet_name                                  = "sn2-private-${module.network.vnet_name}"
+        private_subnet_network_security_group_association_id = module.private_nsg.nsg_subnet_association_ids[0]
       }
     }
   ]
