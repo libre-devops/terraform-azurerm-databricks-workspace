@@ -1,14 +1,14 @@
 ```hcl
 module "rg" {
-  source = "cyber-scot/rg/azurerm"
+  source = "libre-devops/rg/azurerm"
 
-  name     = "rg-${var.short}-${var.loc}-${var.env}-01"
+  rg_name  = "rg-${var.short}-${var.loc}-${var.env}-01"
   location = local.location
   tags     = local.tags
 }
 
 module "network" {
-  source = "cyber-scot/network/azurerm"
+  source = "libre-devops/network/azurerm"
 
   rg_name  = module.rg.rg_name
   location = module.rg.rg_location
@@ -18,75 +18,60 @@ module "network" {
   vnet_location      = module.rg.rg_location
   vnet_address_space = ["10.0.0.0/16"]
 
-  subnets = {
-    "sn1-public-${module.network.vnet_name}" = {
-      address_prefixes = ["10.0.0.0/24"]
-      delegation = [
-        {
-          type = "Microsoft.Databricks/workspaces"
-        },
-      ]
-    }
-    "sn2-private-${module.network.vnet_name}" = {
-      address_prefixes = ["10.0.1.0/24"]
-      delegation = [
-        {
-          type = "Microsoft.Databricks/workspaces"
-        },
-      ]
-    }
-  }
+  subnets = {}
 }
 
-module "public_nsg" {
-  source = "cyber-scot/nsg/azurerm"
+module "sa" {
+  source = "libre-devops/storage-account/azurerm"
+  storage_accounts = [
+    {
+      name     = "sa${var.short}${var.loc}${var.env}01"
+      rg_name  = module.rg.rg_name
+      location = module.rg.rg_location
+      tags     = module.rg.rg_tags
+
+      identity_type = "SystemAssigned"
+      identity_ids  = []
+
+      network_rules = {
+        bypass                     = ["AzureServices"]
+        default_action             = "Deny"
+        ip_rules                   = [chomp(data.http.client_ip.response_body)]
+        virtual_network_subnet_ids = []
+      }
+    },
+  ]
+}
+
+
+module "databricks_workspace" {
+  source = "../../"
 
   rg_name  = module.rg.rg_name
   location = module.rg.rg_location
   tags     = module.rg.rg_tags
 
-  nsg_name              = "nsg-public-${var.short}-${var.loc}-${var.env}-01"
-  associate_with_subnet = true
-  subnet_id             = module.network.subnets_ids["sn1-public-${module.network.vnet_name}"]
-}
-
-module "private_nsg" {
-  source = "cyber-scot/nsg/azurerm"
-
-  rg_name  = module.rg.rg_name
-  location = module.rg.rg_location
-  tags     = module.rg.rg_tags
-
-  nsg_name              = "nsg-private-${var.short}-${var.loc}-${var.env}-01"
-  associate_with_subnet = true
-  subnet_id             = module.network.subnets_ids["sn2-private-${module.network.vnet_name}"]
-}
-
-module "databricks" {
-  source = "cyber-scot/databricks-workspace/azurerm"
-
-  rg_name  = module.rg.rg_name
-  location = module.rg.rg_location
-  tags     = module.rg.rg_tags
 
   databricks_workspaces = [
     {
-      name                                  = "db-${var.short}-${var.loc}-${var.env}-01"
-      sku                                   = "trial"
+      name                                  = "datab-${var.short}-${var.loc}-${var.env}-01"
+      sku                                   = "standard"
       customer_managed_key_enabled          = false
-      infrastructure_encryption_enabled     = false
+      infrastructure_encryption_enabled     = true
       public_network_access_enabled         = false
       network_security_group_rules_required = "NoAzureDatabricksRules"
 
       custom_parameters = {
-        no_public_ip                                         = true
-        virtual_network_id                                   = module.network.vnet_id
-        storage_account_name                                 = "sadb${var.short}${var.loc}${var.env}01"
-        storage_account_sku_name                             = "Standard_LRS"
-        public_subnet_name                                   = "sn1-public-${module.network.vnet_name}"
-        public_subnet_network_security_group_association_id  = module.public_nsg.nsg_subnet_association_ids[0]
-        private_subnet_name                                  = "sn2-private-${module.network.vnet_name}"
-        private_subnet_network_security_group_association_id = module.private_nsg.nsg_subnet_association_ids[0]
+        public_ip_name     = "pip-datab-${var.short}-${var.loc}-${var.env}-01"
+        no_public_ip       = false
+        public_subnet_name = "public"
+        #         public_subnet_network_security_group_association_id  = "example-public-nsg-id"
+        private_subnet_name = "private"
+        #         private_subnet_network_security_group_association_id = "example-private-nsg-id"
+        storage_account_name     = "lbdotstdbsa1"
+        storage_account_sku_name = "Standard_LRS"
+        virtual_network_id       = module.network.vnet_id
+        vnet_address_prefix      = module.network.vnet_address_space[0]
       }
     }
   ]
@@ -100,27 +85,23 @@ No requirements.
 
 | Name | Version |
 |------|---------|
-| <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) | n/a |
-| <a name="provider_external"></a> [external](#provider\_external) | n/a |
-| <a name="provider_http"></a> [http](#provider\_http) | n/a |
+| <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) | 3.115.0 |
+| <a name="provider_http"></a> [http](#provider\_http) | 3.4.4 |
 
 ## Modules
 
 | Name | Source | Version |
 |------|--------|---------|
-| <a name="module_databricks"></a> [databricks](#module\_databricks) | cyber-scot/databricks-workspace/azurerm | n/a |
-| <a name="module_network"></a> [network](#module\_network) | cyber-scot/network/azurerm | n/a |
-| <a name="module_private_nsg"></a> [private\_nsg](#module\_private\_nsg) | cyber-scot/nsg/azurerm | n/a |
-| <a name="module_public_nsg"></a> [public\_nsg](#module\_public\_nsg) | cyber-scot/nsg/azurerm | n/a |
-| <a name="module_rg"></a> [rg](#module\_rg) | cyber-scot/rg/azurerm | n/a |
+| <a name="module_databricks_workspace"></a> [databricks\_workspace](#module\_databricks\_workspace) | ../../ | n/a |
+| <a name="module_network"></a> [network](#module\_network) | libre-devops/network/azurerm | n/a |
+| <a name="module_rg"></a> [rg](#module\_rg) | libre-devops/rg/azurerm | n/a |
+| <a name="module_sa"></a> [sa](#module\_sa) | libre-devops/storage-account/azurerm | n/a |
 
 ## Resources
 
 | Name | Type |
 |------|------|
 | [azurerm_client_config.current](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/client_config) | data source |
-| [external_external.detect_os](https://registry.terraform.io/providers/hashicorp/external/latest/docs/data-sources/external) | data source |
-| [external_external.generate_timestamp](https://registry.terraform.io/providers/hashicorp/external/latest/docs/data-sources/external) | data source |
 | [http_http.client_ip](https://registry.terraform.io/providers/hashicorp/http/latest/docs/data-sources/http) | data source |
 
 ## Inputs
