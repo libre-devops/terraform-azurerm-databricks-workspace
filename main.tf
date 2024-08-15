@@ -8,14 +8,14 @@ resource "azurerm_databricks_workspace" "this" {
   tags                = var.tags
   sku                 = lower(each.value.sku)
 
-  load_balancer_backend_address_pool_id               = each.value.load_balancer_backend_address_pool_id
-  managed_services_cmk_key_vault_key_id               = each.value.managed_services_cmk_key_vault_key_id
-  managed_disk_cmk_key_vault_key_id                   = each.value.managed_disk_cmk_key_vault_key_id
-  managed_disk_cmk_rotation_to_latest_version_enabled = each.value.managed_disk_cmk_rotation_to_latest_version_enabled
-  customer_managed_key_enabled                        = each.value.customer_managed_key_enabled
-  infrastructure_encryption_enabled                   = lower(each.value.sku) == "premium" ? each.value.infrastructure_encryption_enabled : false
-  public_network_access_enabled                       = each.value.public_network_access_enabled
-  network_security_group_rules_required               = each.value.network_security_group_rules_required
+  load_balancer_backend_address_pool_id = each.value.load_balancer_backend_address_pool_id
+  managed_services_cmk_key_vault_key_id = each.value.managed_services_cmk_key_vault_key_id
+  managed_disk_cmk_key_vault_key_id     = try(each.value.managed_disk_cmk_key_vault_key_id, null)
+  #   managed_disk_cmk_rotation_to_latest_version_enabled = each.value.managed_disk_cmk_rotation_to_latest_version_enabled
+  customer_managed_key_enabled          = each.value.customer_managed_key_enabled
+  infrastructure_encryption_enabled     = lower(each.value.sku) == "premium" ? each.value.infrastructure_encryption_enabled : false
+  public_network_access_enabled         = each.value.public_network_access_enabled
+  network_security_group_rules_required = each.value.network_security_group_rules_required
 
   dynamic "custom_parameters" {
     for_each = each.value.custom_parameters != null ? [each.value.custom_parameters] : []
@@ -31,6 +31,7 @@ resource "azurerm_databricks_workspace" "this" {
       storage_account_name                                 = custom_parameters.value.storage_account_name
       storage_account_sku_name                             = custom_parameters.value.storage_account_sku_name
       virtual_network_id                                   = custom_parameters.value.virtual_network_id
+      vnet_address_prefix                                  = custom_parameters.value.vnet_address_prefix
     }
   }
 }
