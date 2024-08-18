@@ -17,7 +17,13 @@ module "network" {
   vnet_location      = module.rg.rg_location
   vnet_address_space = ["10.0.0.0/16"]
 
-  subnets = {}
+  subnets = {
+    "subnet1" = {
+      address_prefixes  = ["10.0.3.0/24"]
+      service_endpoints = ["Microsoft.Storage", "Microsoft.KeyVault"]
+      delegation        = []
+    }
+  }
 }
 
 module "sa" {
@@ -39,6 +45,49 @@ module "sa" {
         virtual_network_subnet_ids = []
       }
     },
+  ]
+}
+
+module "role_assignments" {
+  source = "libre-devops/role-assignment/azurerm"
+
+  assignments = [
+    {
+      role_definition_name = "Key Vault Administrator"
+      scope                = module.rg.rg_id
+      principal_id         = data.azurerm_client_config.current.object_id
+    },
+  ]
+}
+
+module "key_vault" {
+  source = "libre-devops/keyvault/azurerm"
+
+  key_vaults = [
+    {
+      name     = "kv-${var.short}-${var.loc}-${var.env}-tst-01"
+      rg_name  = module.rg.rg_name
+      location = module.rg.rg_location
+      tags     = module.rg.rg_tags
+      contact = [
+        {
+          name  = "LibreDevOps"
+          email = "info@libredevops.org"
+        }
+      ]
+      enabled_for_deployment          = true
+      enabled_for_disk_encryption     = true
+      enabled_for_template_deployment = true
+      enable_rbac_authorization       = true
+      purge_protection_enabled        = false
+      public_network_access_enabled   = true
+      network_acls = {
+        default_action             = "Deny"
+        bypass                     = "AzureServices"
+        ip_rules                   = [chomp(data.http.client_ip.response_body)]
+        virtual_network_subnet_ids = [module.network.subnets_ids["subnet1"]]
+      }
+    }
   ]
 }
 
