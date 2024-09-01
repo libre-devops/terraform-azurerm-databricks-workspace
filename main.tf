@@ -35,3 +35,40 @@ resource "azurerm_databricks_workspace" "this" {
     }
   }
 }
+
+resource "azurerm_databricks_virtual_network_peering" "example" {
+  for_each            = { for k, v in var.databricks_workspaces : k => v if v.create_vnet_peering == true }
+  name                = each.value.vnet_peering_name != null ? each.value.vnet_peering_name : "${azurerm_databricks_workspace.this[each.key].name}-peering"
+  resource_group_name = var.rg_name
+  workspace_id        = azurerm_databricks_workspace.this[each.key].id
+
+  remote_address_space_prefixes = each.value.remote_address_space_prefixes
+  remote_virtual_network_id     = each.value.remote_virtual_network_id
+  allow_virtual_network_access  = each.value.allow_virtual_network_access
+  allow_forwarded_traffic       = each.value.allow_forwarded_traffic
+  allow_gateway_transit         = each.value.allow_gateway_transit
+  use_remote_gateways           = each.value.use_remote_gateways
+}
+
+resource "azurerm_databricks_access_connector" "access_connector" {
+  for_each            = { for k, v in var.databricks_workspaces : k => v if v.create_access_connector == true }
+  name                = each.value.access_connector_name != null ? each.value.access_connector_name : "${azurerm_databricks_workspace.this[each.key].name}-access-connector"
+  resource_group_name = var.rg_name
+  location            = var.location
+  tags                = var.tags
+
+  dynamic "identity" {
+    for_each = each.value.identity_type == "SystemAssigned" ? [each.value.identity_type] : []
+    content {
+      type = each.value.identity_type
+    }
+  }
+
+  dynamic "identity" {
+    for_each = each.value.identity_type == "UserAssigned" ? [each.value.identity_type] : []
+    content {
+      type         = each.value.identity_type
+      identity_ids = length(try(each.value.identity_ids, [])) > 0 ? each.value.identity_ids : []
+    }
+  }
+}

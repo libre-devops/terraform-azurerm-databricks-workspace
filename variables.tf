@@ -25,6 +25,18 @@ variable "databricks_workspaces" {
       virtual_network_id                                   = optional(string)
       vnet_address_prefix                                  = optional(string)
     }))
+    create_vnet_peering           = optional(bool, false)
+    vnet_peering_name             = optional(string)
+    remote_address_space_prefixes = optional(list(string))
+    remote_virtual_network_id     = optional(string)
+    allow_virtual_network_access  = optional(bool)
+    allow_forwarded_traffic       = optional(bool)
+    allow_gateway_transit         = optional(bool)
+    use_remote_gateways           = optional(bool)
+    create_access_connector       = optional(bool, false)
+    identity_type                 = optional(string)
+    identity_ids                  = optional(list(string))
+    access_connector_name         = optional(string)
   }))
 }
 
