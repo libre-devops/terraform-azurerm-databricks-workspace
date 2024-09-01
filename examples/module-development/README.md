@@ -54,19 +54,9 @@ module "private_nsg" {
 
   nsg_name              = "nsg-private-${var.short}-${var.loc}-${var.env}-01"
   associate_with_subnet = true
+  apply_standard_rules  = false
   subnet_id             = module.network.subnets_ids["private"]
-  custom_nsg_rules = {
-    "AllowVnetInbound" = {
-      priority                   = 100
-      direction                  = "Inbound"
-      access                     = "Allow"
-      protocol                   = "Tcp"
-      source_port_range          = "*"
-      destination_port_range     = "*"
-      source_address_prefix      = "VirtualNetwork"
-      destination_address_prefix = "VirtualNetwork"
-    }
-  }
+  custom_nsg_rules      = {}
 }
 
 module "public_nsg" {
@@ -79,18 +69,9 @@ module "public_nsg" {
   nsg_name              = "nsg-public-${var.short}-${var.loc}-${var.env}-01"
   associate_with_subnet = true
   subnet_id             = module.network.subnets_ids["public"]
-  custom_nsg_rules = {
-    "AllowVnetInbound" = {
-      priority                   = 100
-      direction                  = "Inbound"
-      access                     = "Allow"
-      protocol                   = "Tcp"
-      source_port_range          = "*"
-      destination_port_range     = "*"
-      source_address_prefix      = "VirtualNetwork"
-      destination_address_prefix = "VirtualNetwork"
-    }
-  }
+  apply_standard_rules  = false
+
+  custom_nsg_rules = {}
 }
 
 module "sa" {
@@ -170,20 +151,6 @@ resource "azurerm_user_assigned_identity" "test" {
   tags                = module.rg.rg_tags
 }
 
-
-resource "azurerm_databricks_access_connector" "example" {
-  name                = "databricks-test"
-  resource_group_name = module.rg.rg_name
-  location            = module.rg.rg_location
-  tags                = module.rg.rg_tags
-
-  identity {
-    type         = "UserAssigned"
-    identity_ids = [azurerm_user_assigned_identity.test.id]
-  }
-}
-
-
 module "databricks_workspace" {
   source = "../../"
 
@@ -214,6 +181,13 @@ module "databricks_workspace" {
         virtual_network_id                                   = module.network.vnet_id
         vnet_address_prefix                                  = module.network.vnet_address_space[0]
       }
+      create_access_connector       = true
+      create_vnet_peering           = false
+      remote_virtual_network_id     = module.network.vnet_id
+      remote_address_space_prefixes = toset([module.network.vnet_address_space[0]])
+      allow_virtual_network_access  = true
+      identity_type                 = "UserAssigned"
+      identity_ids                  = [azurerm_user_assigned_identity.test.id]
     }
   ]
 }
@@ -246,7 +220,6 @@ No requirements.
 
 | Name | Type |
 |------|------|
-| [azurerm_databricks_access_connector.example](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/databricks_access_connector) | resource |
 | [azurerm_user_assigned_identity.test](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/user_assigned_identity) | resource |
 | [azurerm_client_config.current](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/client_config) | data source |
 | [http_http.client_ip](https://registry.terraform.io/providers/hashicorp/http/latest/docs/data-sources/http) | data source |
