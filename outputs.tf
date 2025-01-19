@@ -1,27 +1,3 @@
-output "databricks_access_connector_details" {
-  value = {
-    for k, v in azurerm_databricks_access_connector.access_connector : k => {
-      id = v.id
-      identity = length(v.identity) > 0 ? [
-        for id_block in v.identity : {
-          type         = id_block.type
-          principal_id = id_block.principal_id
-          tenant_id    = id_block.tenant_id
-          identity_ids = try(id_block.identity_ids, [])
-        }
-      ] : []
-    }
-  }
-}
-
-output "databricks_virtual_network_peering_details" {
-  value = {
-    for k, v in azurerm_databricks_virtual_network_peering.example : k => {
-      id = v.id
-    }
-  }
-}
-
 output "databricks_workspace_details" {
   value = {
     for k, v in azurerm_databricks_workspace.this : k => {
